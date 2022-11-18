@@ -78,7 +78,7 @@ func (c *Container) Upgrade() error {
 
 func upgradeV1(tx *sql.Tx, _ *Container) error {
 	_, err := tx.Exec(`CREATE TABLE whatsmeow_device (
-		jid TEXT,
+		jid VARCHAR(255) ,
 
 		registration_id BIGINT NOT NULL CHECK ( registration_id >= 0 AND registration_id < 4294967296 ),
 
@@ -96,117 +96,166 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 
 		platform      TEXT NOT NULL,
 		business_name TEXT NOT NULL,
-		push_name     TEXT NOT NULL
+		push_name     TEXT NOT NULL,
+		PRIMARY KEY (jid)
 );`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_identity_keys (
-		our_jid  TEXT,
+		our_jid  VARCHAR(255),
 		their_id TEXT,
-		identity longblob NOT NULL CHECK ( length(identity) = 32 )
+		identity LONGBLOB NOT NULL CHECK ( length(identity) = 32 ),
 
-		-- PRIMARY KEY (our_jid, their_id),
+		PRIMARY KEY (our_jid, their_id(20)),
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+        CONSTRAINT fk_wm_identity_keys
+			FOREIGN KEY (our_jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(fmt.Sprintf(`CREATE TABLE whatsmeow_pre_keys (
-		jid      TEXT,
+		jid      VARCHAR(255),
 		key_id   INTEGER   CHECK ( key_id >= 0 AND key_id < 16777216 ),
 		%s   LONGBLOB  NOT NULL CHECK ( length(%s) = 32 ),
-		uploaded BOOLEAN NOT NULL
-		-- PRIMARY KEY (jid, key_id),
+		uploaded BOOLEAN NOT NULL,
+
+		PRIMARY KEY (jid, key_id),
 		-- FOREIGN KEY (jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+		CONSTRAINT fk_wm_pre_keys
+			FOREIGN KEY (jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 		);`, "`key`", "`key`"))
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_sessions (
-		our_jid  TEXT,
+		our_jid  VARCHAR(255),
 		their_id TEXT,
-		session  LONGBLOB
+		session  LONGBLOB,
 
-		-- PRIMARY KEY (our_jid, their_id),
+		PRIMARY KEY (our_jid, their_id(20)),
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+		
+		CONSTRAINT fk_wm_sessions
+			FOREIGN KEY (our_jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_sender_keys (
-		our_jid    TEXT,
+		our_jid    VARCHAR(255),
 		chat_id    TEXT,
 		sender_id  TEXT,
-		sender_key LONGBLOB NOT NULL
+		sender_key LONGBLOB NOT NULL,
 
-		-- PRIMARY KEY (our_jid, chat_id, sender_id),
+		PRIMARY KEY (our_jid, chat_id(20), sender_id(20)),
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+		
+		CONSTRAINT fk_wm_sender_keys
+			FOREIGN KEY (our_jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_app_state_sync_keys (
-		jid         TEXT,
+		jid         VARCHAR(255),
 		key_id      LONGBLOB,
 		key_data    LONGBLOB  NOT NULL,
 		timestamp   BIGINT NOT NULL,
-		fingerprint LONGBLOB  NOT NULL
+		fingerprint LONGBLOB  NOT NULL,
 
-		-- PRIMARY KEY (jid, key_id),
+		PRIMARY KEY (jid, key_id(20)),
 		-- FOREIGN KEY (jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+		CONSTRAINT fk_wm_app_state_sync_keys
+			FOREIGN KEY (jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_app_state_version (
-		jid     TEXT,
-		name    TEXT,
+		jid     VARCHAR(255),
+		name    VARCHAR(255),
 		version BIGINT NOT NULL,
-		hash    LONGBLOB  NOT NULL CHECK ( length(hash) = 128 )
+		hash    LONGBLOB  NOT NULL CHECK ( length(hash) = 128 ),
 
-		-- PRIMARY KEY (jid, name),
+		PRIMARY KEY (jid, name),
 		-- FOREIGN KEY (jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+		CONSTRAINT fk_wm_app_state_version
+			FOREIGN KEY (jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_app_state_mutation_macs (
-		jid       TEXT,
-		name      TEXT,
+		jid       VARCHAR(255),
+		name      VARCHAR(255),
 		version   BIGINT,
 		index_mac LONGBLOB          CHECK ( length(index_mac) = 32 ),
-		value_mac LONGBLOB NOT NULL CHECK ( length(value_mac) = 32 )
+		value_mac LONGBLOB NOT NULL CHECK ( length(value_mac) = 32 ),
 
-		-- PRIMARY KEY (jid, name, version, index_mac),
+		PRIMARY KEY (jid, name(20), version, index_mac(20)),
 		-- FOREIGN KEY (jid, name) REFERENCES whatsmeow_app_state_version(jid, name) ON DELETE CASCADE ON UPDATE CASCADE
+		CONSTRAINT fk_wm_app_state_mutation_macs
+			FOREIGN KEY (jid, name)
+			REFERENCES waslap.whatsmeow_app_state_version (jid, name)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_contacts (
-		our_jid       TEXT,
+		our_jid       VARCHAR(255),
 		their_jid     TEXT,
 		first_name    TEXT,
 		full_name     TEXT,
 		push_name     TEXT,
-		business_name TEXT
+		business_name TEXT,
 
-		-- PRIMARY KEY (our_jid, their_jid),
+		PRIMARY KEY (our_jid, their_jid(20)),
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+		CONSTRAINT fk_wm_contacts
+			FOREIGN KEY (our_jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
 	}
 	_, err = tx.Exec(`CREATE TABLE whatsmeow_chat_settings (
-		our_jid       TEXT,
+		our_jid       VARCHAR(255),
 		chat_jid      TEXT,
 		muted_until   BIGINT  NOT NULL DEFAULT 0,
 		pinned        BOOLEAN NOT NULL DEFAULT false,
-		archived      BOOLEAN NOT NULL DEFAULT false
+		archived      BOOLEAN NOT NULL DEFAULT false,
 
-		-- PRIMARY KEY (our_jid, chat_jid),
+		PRIMARY KEY (our_jid, chat_jid(20)),
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
+		CONSTRAINT fk_wm_chat_settings
+			FOREIGN KEY (our_jid)
+			REFERENCES waslap.whatsmeow_device (jid)
+			ON DELETE CASCADE
+			ON UPDATE CASCADE
 	);`)
 	if err != nil {
 		return err
@@ -248,15 +297,19 @@ func upgradeV2(tx *sql.Tx, container *Container) error {
 }
 
 func upgradeV3(tx *sql.Tx, container *Container) error {
-	_, err := tx.Exec(`CREATE TABLE whatsmeow_message_secrets (
-		our_jid    TEXT,
-		chat_jid   TEXT,
-		sender_jid TEXT,
-		message_id TEXT,
-		key        bytea NOT NULL,
-
-		PRIMARY KEY (our_jid, chat_jid, sender_jid, message_id),
-		FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
-	)`)
+	_, err := tx.Exec(fmt.Sprintf(`
+	CREATE TABLE whatsmeow_message_secrets (
+	  our_jid VARCHAR(255) NULL DEFAULT NULL,
+	  chat_jid TEXT NULL DEFAULT NULL,
+	  sender_jid TEXT NULL DEFAULT NULL,
+	  message_id TEXT NULL DEFAULT NULL,
+	  %s LONGBLOB NOT NULL CHECK ( length(%s) = 64 ),
+  
+  	CONSTRAINT fk_wm_msg_scrt
+		FOREIGN KEY (our_jid)
+		REFERENCES waslap.whatsmeow_device (jid)
+		ON DELETE CASCADE
+		ON UPDATE CASCADE);
+	`, "`key`", "`key`"))
 	return err
 }
