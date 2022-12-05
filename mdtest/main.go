@@ -319,6 +319,44 @@ func handleCmd(cmd string, args []string) {
 		} else {
 			log.Infof("Group info: %+v", resp)
 		}
+	case "subgroups":
+		if len(args) < 1 {
+			log.Errorf("Usage: subgroups <jid>")
+			return
+		}
+		group, ok := parseJID(args[0])
+		if !ok {
+			return
+		} else if group.Server != types.GroupServer {
+			log.Errorf("Input must be a group JID (@%s)", types.GroupServer)
+			return
+		}
+		resp, err := cli.GetSubGroups(group)
+		if err != nil {
+			log.Errorf("Failed to get subgroups: %v", err)
+		} else {
+			for _, sub := range resp {
+				log.Infof("Subgroup: %+v", sub)
+			}
+		}
+	case "communityparticipants":
+		if len(args) < 1 {
+			log.Errorf("Usage: communityparticipants <jid>")
+			return
+		}
+		group, ok := parseJID(args[0])
+		if !ok {
+			return
+		} else if group.Server != types.GroupServer {
+			log.Errorf("Input must be a group JID (@%s)", types.GroupServer)
+			return
+		}
+		resp, err := cli.GetLinkedGroupsParticipants(group)
+		if err != nil {
+			log.Errorf("Failed to get community participants: %v", err)
+		} else {
+			log.Infof("Community participants: %+v", resp)
+		}
 	case "listgroups":
 		groups, err := cli.GetJoinedGroups()
 		if err != nil {
@@ -637,6 +675,13 @@ func handler(rawEvt interface{}) {
 				for _, option := range decrypted.SelectedOptions {
 					log.Infof("- %X", option)
 				}
+			}
+		} else if evt.Message.GetEncReactionMessage() != nil {
+			decrypted, err := cli.DecryptReaction(evt)
+			if err != nil {
+				log.Errorf("Failed to decrypt encrypted reaction: %v", err)
+			} else {
+				log.Infof("Decrypted reaction: %+v", decrypted)
 			}
 		}
 
