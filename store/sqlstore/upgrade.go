@@ -111,7 +111,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
         CONSTRAINT fk_wm_identity_keys
 			FOREIGN KEY (our_jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -128,7 +128,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		-- FOREIGN KEY (jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
 		CONSTRAINT fk_wm_pre_keys
 			FOREIGN KEY (jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 		);`, "`key`", "`key`"))
@@ -145,7 +145,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		
 		CONSTRAINT fk_wm_sessions
 			FOREIGN KEY (our_jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -163,7 +163,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		
 		CONSTRAINT fk_wm_sender_keys
 			FOREIGN KEY (our_jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -181,7 +181,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		-- FOREIGN KEY (jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
 		CONSTRAINT fk_wm_app_state_sync_keys
 			FOREIGN KEY (jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -198,7 +198,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		-- FOREIGN KEY (jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
 		CONSTRAINT fk_wm_app_state_version
 			FOREIGN KEY (jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -216,7 +216,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		-- FOREIGN KEY (jid, name) REFERENCES whatsmeow_app_state_version(jid, name) ON DELETE CASCADE ON UPDATE CASCADE
 		CONSTRAINT fk_wm_app_state_mutation_macs
 			FOREIGN KEY (jid, name)
-			REFERENCES waslap.whatsmeow_app_state_version (jid, name)
+			REFERENCES whatsmeow_app_state_version (jid, name)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -235,7 +235,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
 		CONSTRAINT fk_wm_contacts
 			FOREIGN KEY (our_jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -253,7 +253,7 @@ func upgradeV1(tx *sql.Tx, _ *Container) error {
 		-- FOREIGN KEY (our_jid) REFERENCES whatsmeow_device(jid) ON DELETE CASCADE ON UPDATE CASCADE
 		CONSTRAINT fk_wm_chat_settings
 			FOREIGN KEY (our_jid)
-			REFERENCES waslap.whatsmeow_device (jid)
+			REFERENCES whatsmeow_device (jid)
 			ON DELETE CASCADE
 			ON UPDATE CASCADE
 	);`)
@@ -307,7 +307,7 @@ func upgradeV3(tx *sql.Tx, container *Container) error {
   
   	CONSTRAINT fk_wm_msg_scrt
 		FOREIGN KEY (our_jid)
-		REFERENCES waslap.whatsmeow_device (jid)
+		REFERENCES whatsmeow_device (jid)
 		ON DELETE CASCADE
 		ON UPDATE CASCADE);
 	`, "`key`", "`key`"))
