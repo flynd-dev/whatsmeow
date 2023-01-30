@@ -318,9 +318,9 @@ func upgradeV4(tx *sql.Tx, container *Container) error {
 	_, err := tx.Exec(`CREATE TABLE whatsmeow_privacy_tokens (
 		our_jid   TEXT,
 		their_jid TEXT,
-		token     bytea  NOT NULL,
+		token     LONGBLOB  NOT NULL,
 		timestamp BIGINT NOT NULL,
-		PRIMARY KEY (our_jid, their_jid)
+		PRIMARY KEY (our_jid(20), their_jid(20))
 	)`)
 	return err
 }
