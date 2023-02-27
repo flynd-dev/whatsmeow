@@ -280,13 +280,15 @@ func (s *SQLStore) GetSenderKey(group, user string) (key []byte, err error) {
 const (
 	putAppStateSyncKeyQuery = `
 		INSERT INTO whatsmeow_app_state_sync_keys (jid, key_id, key_data, timestamp, fingerprint) VALUES (?, ?, ?, ?, ?)
-		ON CONFLICT (jid, key_id) DO UPDATE SET key_data=?, timestamp=?, fingerprint=?
+		ON CONFLICT (jid, key_id) DO UPDATE
+			SET key_data=?, timestamp=?, fingerprint=?
+			WHERE whatsmeow_app_state_sync_keys.timestamp < ?
 	`
 	getAppStateSyncKeyQuery = `SELECT key_data, timestamp, fingerprint FROM whatsmeow_app_state_sync_keys WHERE jid=? AND key_id=?`
 )
 
 func (s *SQLStore) PutAppStateSyncKey(id []byte, key store.AppStateSyncKey) error {
-	_, err := s.db.Exec(s.DialectAdjustmets(putAppStateSyncKeyQuery), s.JID, id, key.Data, key.Timestamp, key.Fingerprint, key.Data, key.Timestamp, key.Fingerprint)
+	_, err := s.db.Exec(s.DialectAdjustmets(putAppStateSyncKeyQuery), s.JID, id, key.Data, key.Timestamp, key.Fingerprint, key.Data, key.Timestamp, key.Fingerprint, key.Timestamp)
 	return err
 }
 

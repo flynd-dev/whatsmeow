@@ -69,28 +69,6 @@ message DeviceProps {
     optional HistorySyncConfig historySyncConfig = 5;
 }
 
-message PeerDataOperationRequestResponseMessage {
-    message PeerDataOperationResult {
-        message LinkPreviewResponse {
-            optional string url = 1;
-            optional string title = 2;
-            optional string description = 3;
-            optional bytes thumbData = 4;
-            optional string canonicalUrl = 5;
-            optional string matchText = 6;
-            optional string previewType = 7;
-        }
-        
-        optional MediaRetryNotification.ResultType mediaUploadResult = 1;
-        optional StickerMessage stickerMessage = 2;
-        optional LinkPreviewResponse linkPreviewResponse = 3;
-    }
-    
-    optional PeerDataOperationRequestType peerDataOperationRequestType = 1;
-    optional string stanzaId = 2;
-    repeated PeerDataOperationResult peerDataOperationResult = 3;
-}
-
 message PeerDataOperationRequestMessage {
     message RequestUrlPreview {
         optional string url = 1;
@@ -480,6 +458,11 @@ message ExtendedTextMessage {
         BRYNDAN_WRITE = 3;
         BEBASNEUE_REGULAR = 4;
         OSWALD_HEAVY = 5;
+        DAMION_REGULAR = 6;
+        MORNINGBREEZE_REGULAR = 7;
+        CALISTOGA_REGULAR = 8;
+        EXO2_EXTRABOLD = 9;
+        COURIERPRIME_BOLD = 10;
     }
     optional string text = 1;
     optional string matchedText = 2;
@@ -726,9 +709,7 @@ message HydratedTemplateButton {
 }
 
 message GroupMention {
-    // Manually bumped indexes by 1.
-    // They seem to be 0 and 1 in JS, but index 0 isn't valid 🤔
-    optional string jid = 1;
+    optional string groupJid = 1;
     optional string groupSubject = 2;
 }
 
@@ -751,6 +732,11 @@ message DeviceListMetadata {
 }
 
 message ContextInfo {
+    message UTMInfo {
+        optional string utmSource = 1;
+        optional string utmCampaign = 2;
+    }
+    
     message ExternalAdReplyInfo {
         enum MediaType {
             NONE = 0;
@@ -811,6 +797,7 @@ message ContextInfo {
     optional uint32 trustBannerAction = 38;
     optional bool isSampled = 39;
     repeated GroupMention groupMentions = 40;
+    optional UTMInfo utm = 41;
 }
 
 message ActionLink {
@@ -933,6 +920,9 @@ message Message {
     optional PollCreationMessage pollCreationMessageV2 = 60;
     optional ScheduledCallCreationMessage scheduledCallCreationMessage = 61;
     optional FutureProofMessage groupMentionedMessage = 62;
+    optional PinMessage pinMessage = 63;
+    optional PollCreationMessage pollCreationMessageV3 = 64;
+    optional ScheduledCallEditMessage scheduledCallEditMessage = 65;
 }
 
 message MessageContextInfo {
@@ -1053,6 +1043,15 @@ message SendPaymentMessage {
     optional Message noteMessage = 2;
     optional MessageKey requestMessageKey = 3;
     optional PaymentBackground background = 4;
+}
+
+message ScheduledCallEditMessage {
+    enum EditType {
+        UNKNOWN = 0;
+        CANCEL = 1;
+    }
+    optional MessageKey key = 1;
+    optional EditType editType = 2;
 }
 
 message ScheduledCallCreationMessage {
@@ -1179,11 +1178,44 @@ message PollCreationMessage {
     optional ContextInfo contextInfo = 5;
 }
 
+message PinMessage {
+    enum PinMessageType {
+        UNKNOWN_PIN_MESSAGE_TYPE = 0;
+        PIN_FOR_ALL = 1;
+        UNPIN_FOR_ALL = 2;
+    }
+    optional MessageKey key = 1;
+    optional PinMessageType pinMessageType = 2;
+    optional int64 senderTimestampMs = 3;
+}
+
 enum PeerDataOperationRequestType {
     UPLOAD_STICKER = 0;
     SEND_RECENT_STICKER_BOOTSTRAP = 1;
     GENERATE_LINK_PREVIEW = 2;
 }
+message PeerDataOperationRequestResponseMessage {
+    message PeerDataOperationResult {
+        message LinkPreviewResponse {
+            optional string url = 1;
+            optional string title = 2;
+            optional string description = 3;
+            optional bytes thumbData = 4;
+            optional string canonicalUrl = 5;
+            optional string matchText = 6;
+            optional string previewType = 7;
+        }
+        
+        optional MediaRetryNotification.ResultType mediaUploadResult = 1;
+        optional StickerMessage stickerMessage = 2;
+        optional LinkPreviewResponse linkPreviewResponse = 3;
+    }
+    
+    optional PeerDataOperationRequestType peerDataOperationRequestType = 1;
+    optional string stanzaId = 2;
+    repeated PeerDataOperationResult peerDataOperationResult = 3;
+}
+
 message EphemeralSetting {
     optional sfixed32 duration = 1;
     optional sfixed64 timestamp = 2;
@@ -1852,6 +1884,7 @@ message ClientPayload {
             WEAROS = 29;
             ARDEVICE = 30;
             VRDEVICE = 31;
+            BLUE_WEB = 32;
         }
         message AppVersion {
             optional uint32 primary = 1;
@@ -1933,11 +1966,6 @@ message ClientPayload {
         NETWORK_SWITCH = 4;
         PING_RECONNECT = 5;
     }
-    enum BizMarketSegment {
-        DEFAULT = 0;
-        DEVX = 1;
-        INBOX = 2;
-    }
     optional uint64 username = 1;
     optional bool passive = 3;
     optional UserAgent userAgent = 5;
@@ -1962,7 +1990,6 @@ message ClientPayload {
     optional bytes fbDeviceId = 32;
     optional bool pull = 33;
     optional bytes paddingBytes = 34;
-    optional BizMarketSegment bizMarketSegment = 35;
     optional int32 yearClass = 36;
     optional int32 memClass = 37;
 }
@@ -2279,6 +2306,7 @@ message PollUpdate {
     optional PollVoteMessage vote = 2;
     optional int64 senderTimestampMs = 3;
     optional int64 serverTimestampMs = 4;
+    optional bool unread = 5;
 }
 
 message PollAdditionalMetadata {
