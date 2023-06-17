@@ -66,7 +66,12 @@ func New(dialect, address string, log waLog.Logger) (*Container, error) {
 //	if err != nil {
 //	    panic(err)
 //	}
-//	container, err := sqlstore.NewWithDB(db, "sqlite3", nil)
+//	container := sqlstore.NewWithDB(db, "sqlite3", nil)
+//
+// This method does not call Upgrade automatically like New does, so you must call it yourself:
+//
+//	container := sqlstore.NewWithDB(...)
+//	err := container.Upgrade()
 func NewWithDB(db *sql.DB, dialect string, log waLog.Logger) *Container {
 	if log == nil {
 		log = waLog.Noop
@@ -224,7 +229,7 @@ func (c *Container) PutDevice(device *store.Device) error {
 	if device.ID == nil {
 		return ErrDeviceIDMustBeSet
 	}
-	_, err := c.db.Exec(c.DialectAdjustmets(insertDeviceQuery),
+	_, err := c.db.Exec(c.DialectAdjustments(insertDeviceQuery),
 		device.ID.String(), device.RegistrationID, device.NoiseKey.Priv[:], device.IdentityKey.Priv[:],
 		device.SignedPreKey.Priv[:], device.SignedPreKey.KeyID, device.SignedPreKey.Signature[:],
 		device.AdvSecretKey, device.Account.Details, device.Account.AccountSignature, device.Account.AccountSignatureKey, device.Account.DeviceSignature,
@@ -262,7 +267,7 @@ var (
 	mysqlConflictReplacement = `ON DUPLICATE KEY UPDATE`
 )
 
-func (c *Container) DialectAdjustmets(query string) string {
+func (c *Container) DialectAdjustments(query string) string {
 	if c.dialect == "mysql" {
 		query = mysqlConflictPattern.ReplaceAllString(query, mysqlConflictReplacement)
 	}

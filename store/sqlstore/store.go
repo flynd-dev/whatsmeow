@@ -76,7 +76,7 @@ const (
 )
 
 func (s *SQLStore) PutIdentity(address string, key [32]byte) error {
-	_, err := s.db.Exec(s.DialectAdjustmets(putIdentityQuery), s.JID, address, key[:], key[:])
+	_, err := s.db.Exec(s.DialectAdjustments(putIdentityQuery), s.JID, address, key[:], key[:])
 	return err
 }
 
@@ -132,7 +132,7 @@ func (s *SQLStore) HasSession(address string) (has bool, err error) {
 }
 
 func (s *SQLStore) PutSession(address string, session []byte) error {
-	_, err := s.db.Exec(s.DialectAdjustmets(putSessionQuery), s.JID, address, session, session)
+	_, err := s.db.Exec(s.DialectAdjustments(putSessionQuery), s.JID, address, session, session)
 	return err
 }
 
@@ -265,7 +265,7 @@ const (
 )
 
 func (s *SQLStore) PutSenderKey(group, user string, session []byte) error {
-	_, err := s.db.Exec(s.DialectAdjustmets(putSenderKeyQuery), s.JID, group, user, session, session)
+	_, err := s.db.Exec(s.DialectAdjustments(putSenderKeyQuery), s.JID, group, user, session, session)
 	return err
 }
 
@@ -285,20 +285,30 @@ const (
 			WHERE whatsmeow_app_state_sync_keys.timestamp < ?
 	`
 	getAppStateSyncKeyQuery = `SELECT key_data, timestamp, fingerprint FROM whatsmeow_app_state_sync_keys WHERE jid=? AND key_id=?`
+	getLatestAppStateSyncKeyIDQuery = `SELECT key_id FROM whatsmeow_app_state_sync_keys WHERE jid=? ORDER BY timestamp DESC LIMIT 1`
 )
 
 func (s *SQLStore) PutAppStateSyncKey(id []byte, key store.AppStateSyncKey) error {
-	_, err := s.db.Exec(s.DialectAdjustmets(putAppStateSyncKeyQuery), s.JID, id, key.Data, key.Timestamp, key.Fingerprint, key.Data, key.Timestamp, key.Fingerprint, key.Timestamp)
+	_, err := s.db.Exec(s.DialectAdjustments(putAppStateSyncKeyQuery), s.JID, id, key.Data, key.Timestamp, key.Fingerprint, key.Data, key.Timestamp, key.Fingerprint, key.Timestamp)
 	return err
 }
 
 func (s *SQLStore) GetAppStateSyncKey(id []byte) (*store.AppStateSyncKey, error) {
 	var key store.AppStateSyncKey
-	err := s.db.QueryRow(getAppStateSyncKeyQuery, s.JID, id).Scan(&key.Data, &key.Timestamp, &key.Fingerprint)
+	err := s.db.QueryRow(s.DialectAdjustments(getAppStateSyncKeyQuery), s.JID, id).Scan(&key.Data, &key.Timestamp, &key.Fingerprint)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	return &key, err
+}
+
+func (s *SQLStore) GetLatestAppStateSyncKeyID() ([]byte, error) {
+	var keyID []byte
+	err := s.db.QueryRow(getLatestAppStateSyncKeyIDQuery, s.JID).Scan(&keyID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	return keyID, err
 }
 
 const (
@@ -315,7 +325,7 @@ const (
 )
 
 func (s *SQLStore) PutAppStateVersion(name string, version uint64, hash [128]byte) error {
-	_, err := s.db.Exec(s.DialectAdjustmets(putAppStateVersionQuery), s.JID, name, version, hash[:], version, hash[:])
+	_, err := s.db.Exec(s.DialectAdjustments(putAppStateVersionQuery), s.JID, name, version, hash[:], version, hash[:])
 	return err
 }
 
@@ -450,7 +460,7 @@ func (s *SQLStore) PutPushName(user types.JID, pushName string) (bool, string, e
 		return false, "", err
 	}
 	if cached.PushName != pushName {
-		_, err = s.db.Exec(s.DialectAdjustmets(putPushNameQuery), s.JID, user, pushName, pushName)
+		_, err = s.db.Exec(s.DialectAdjustments(putPushNameQuery), s.JID, user, pushName, pushName)
 		if err != nil {
 			return false, "", err
 		}
@@ -471,7 +481,7 @@ func (s *SQLStore) PutBusinessName(user types.JID, businessName string) (bool, s
 		return false, "", err
 	}
 	if cached.BusinessName != businessName {
-		_, err = s.db.Exec(s.DialectAdjustmets(putBusinessNameQuery), s.JID, user, businessName, businessName)
+		_, err = s.db.Exec(s.DialectAdjustments(putBusinessNameQuery), s.JID, user, businessName, businessName)
 		if err != nil {
 			return false, "", err
 		}
@@ -492,7 +502,7 @@ func (s *SQLStore) PutContactName(user types.JID, firstName, fullName string) er
 		return err
 	}
 	if cached.FirstName != firstName || cached.FullName != fullName {
-		_, err = s.db.Exec(s.DialectAdjustmets(putContactNameQuery), s.JID, user, firstName, fullName, firstName, fullName)
+		_, err = s.db.Exec(s.DialectAdjustments(putContactNameQuery), s.JID, user, firstName, fullName, firstName, fullName)
 		if err != nil {
 			return err
 		}
@@ -649,17 +659,17 @@ func (s *SQLStore) PutMutedUntil(chat types.JID, mutedUntil time.Time) error {
 	if !mutedUntil.IsZero() {
 		val = mutedUntil.Unix()
 	}
-	_, err := s.db.Exec(fmt.Sprintf(s.DialectAdjustmets(putChatSettingQuery), "muted_until"), s.JID, chat, val, val)
+	_, err := s.db.Exec(fmt.Sprintf(s.DialectAdjustments(putChatSettingQuery), "muted_until"), s.JID, chat, val, val)
 	return err
 }
 
 func (s *SQLStore) PutPinned(chat types.JID, pinned bool) error {
-	_, err := s.db.Exec(fmt.Sprintf(s.DialectAdjustmets(putChatSettingQuery), "pinned"), s.JID, chat, pinned, pinned)
+	_, err := s.db.Exec(fmt.Sprintf(s.DialectAdjustments(putChatSettingQuery), "pinned"), s.JID, chat, pinned, pinned)
 	return err
 }
 
 func (s *SQLStore) PutArchived(chat types.JID, archived bool) error {
-	_, err := s.db.Exec(fmt.Sprintf(s.DialectAdjustmets(putChatSettingQuery), "archived"), s.JID, chat, archived, archived)
+	_, err := s.db.Exec(fmt.Sprintf(s.DialectAdjustments(putChatSettingQuery), "archived"), s.JID, chat, archived, archived)
 	return err
 }
 
