@@ -101,6 +101,7 @@ func (cli *Client) parseMessageInfo(node *waBinary.Node) (*types.MessageInfo, er
 	info.Timestamp = ag.UnixTime("t")
 	info.PushName = ag.OptionalString("notify")
 	info.Category = ag.OptionalString("category")
+	info.Type = ag.OptionalString("type")
 	if !ag.OK() {
 		return nil, ag.Error()
 	}
@@ -156,7 +157,12 @@ func (cli *Client) decryptMessages(info *types.MessageInfo, node *waBinary.Node)
 			cli.Log.Warnf("Error decrypting message from %s: %v", info.SourceString(), err)
 			isUnavailable := encType == "skmsg" && !containsDirectMsg && errors.Is(err, signalerror.ErrNoSenderKeyForUser)
 			go cli.sendRetryReceipt(node, isUnavailable)
-			cli.dispatchEvent(&events.UndecryptableMessage{Info: *info, IsUnavailable: isUnavailable})
+			decryptFailMode, _ := child.Attrs["decrypt-fail"].(string)
+			cli.dispatchEvent(&events.UndecryptableMessage{
+				Info:            *info,
+				IsUnavailable:   isUnavailable,
+				DecryptFailMode: events.DecryptFailMode(decryptFailMode),
+			})
 			return
 		}
 
@@ -246,6 +252,9 @@ func isValidPadding(plaintext []byte) bool {
 }
 
 func unpadMessage(plaintext []byte) ([]byte, error) {
+	if len(plaintext) == 0 {
+		return nil, fmt.Errorf("plaintext is empty")
+	}
 	if checkPadding && !isValidPadding(plaintext) {
 		return nil, fmt.Errorf("plaintext doesn't have expected padding")
 	}

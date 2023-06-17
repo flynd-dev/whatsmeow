@@ -41,7 +41,7 @@ async function findAppModules(mods) {
         533494, // Message, ..., RequestPaymentMessage, Reaction, QuickReplyButton, ..., ButtonsResponseMessage, ActionLink, ...
         199931, // EphemeralSetting
         60370, // WallpaperSettings, Pushname, MediaVisibility, HistorySync, ..., GroupParticipant, ...
-        412744, // PollEncValue, MsgOpaqueData, MsgRowOpaqueData
+        //412744, // PollEncValue, MsgOpaqueData, MsgRowOpaqueData
         229479, // ServerErrorReceipt, MediaRetryNotification, MediaRetryNotificationResult
         933734, // MessageKey
         150715, // Duplicate of MessageKey
@@ -50,7 +50,10 @@ async function findAppModules(mods) {
         759089, // VerifiedNameCertificate, LocalizedName, ..., BizIdentityInfo, BizAccountLinkInfo, ...
         614806, // HandshakeMessage, ..., ClientPayload, ..., AppVersion, UserAgent, WebdPayload ...
         968923, // Reaction, UserReceipt, ..., PhotoChange, ..., WebFeatures, ..., WebMessageInfoStatus, ...
-        294075, // NoiseCertificate, CertChain
+        698723, // NoiseCertificate, CertChain
+        //867311, // ChatRowOpaqueData, ...
+        //726743, // SignalMessage, ...
+        //915286, // SessionStructure, ...
     ]
     const unspecName = name => name.endsWith("Spec") ? name.slice(0, -4) : name
     const unnestName = name => name.replace("Message$", "").replace("SyncActionValue$", "") // Don't nest messages into Message, that's too much nesting
@@ -222,19 +225,26 @@ async function findAppModules(mods) {
 
 
     for (const mod of modules) {
+        let hasMore = true
+        let loops = 0
         const idents = modulesInfo[mod.key.value].identifiers
-        for (const ident of Object.values(idents)) {
-            if (!ident.name.includes("$")) {
-                continue
+        while (hasMore && loops < 5) {
+            hasMore = false
+            loops++
+            for (const ident of Object.values(idents)) {
+                if (!ident.name.includes("$")) {
+                    continue
+                }
+                const parts = ident.name.split("$")
+                const parent = findNested(Object.values(idents), parts.slice(0, -1))
+                if (!parent) {
+                    hasMore = true
+                    continue
+                }
+                parent.children.push(ident)
+                delete idents[ident.name]
+                ident.unnestedName = parts[parts.length-1]
             }
-            const parts = ident.name.split("$")
-            const parent = findNested(Object.values(idents), parts.slice(0, -1))
-            if (!parent) {
-                continue
-            }
-            parent.children.push(ident)
-            delete idents[ident.name]
-            ident.unnestedName = parts[parts.length-1]
         }
     }
 
