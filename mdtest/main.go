@@ -178,6 +178,16 @@ func parseJID(arg string) (types.JID, bool) {
 
 func handleCmd(cmd string, args []string) {
 	switch cmd {
+	case "pair-phone":
+		if len(args) < 1 {
+			log.Errorf("Usage: pair-phone <number>")
+			return
+		}
+		linkingCode, err := cli.PairPhone(args[0], true)
+		if err != nil {
+			panic(err)
+		}
+		fmt.Println("Linking code:", linkingCode)
 	case "reconnect":
 		cli.Disconnect()
 		err := cli.Connect()
@@ -843,16 +853,6 @@ func handler(rawEvt interface{}) {
 		log.Debugf("App state event: %+v / %+v", evt.Index, evt.SyncActionValue)
 	case *events.KeepAliveTimeout:
 		log.Debugf("Keepalive timeout event: %+v", evt)
-		if evt.ErrorCount > 3 {
-			log.Debugf("Got >3 keepalive timeouts, forcing reconnect")
-			go func() {
-				cli.Disconnect()
-				err := cli.Connect()
-				if err != nil {
-					log.Errorf("Error force-reconnecting after keepalive timeouts: %v", err)
-				}
-			}()
-		}
 	case *events.KeepAliveRestored:
 		log.Debugf("Keepalive restored")
 	}
