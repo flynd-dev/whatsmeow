@@ -8,7 +8,7 @@ const addPrefix = (lines, prefix) => lines.map(line => prefix + line)
 async function findAppModules(mods) {
     const ua = {
         headers: {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0",
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0",
             "Sec-Fetch-Dest": "script",
             "Sec-Fetch-Mode": "no-cors",
             "Sec-Fetch-Site": "same-origin",
@@ -44,20 +44,23 @@ async function findAppModules(mods) {
         //412744, // PollEncValue, MsgOpaqueData, MsgRowOpaqueData
         229479, // ServerErrorReceipt, MediaRetryNotification, MediaRetryNotificationResult
         933734, // MessageKey
-        150715, // Duplicate of MessageKey
-        984084, // SyncdVersion, SyncdValue, ..., SyncdPatch, SyncdMutation, ..., ExitCode
+        557871, // Duplicate of MessageKey
+        679905, // SyncdVersion, SyncdValue, ..., SyncdPatch, SyncdMutation, ..., ExitCode
         623420, // SyncActionValue, ..., UnarchiveChatsSetting, SyncActionData, StarAction, ...
-        //517244, // Duplicate of 623420, but without CallLogRecord
+        //527796, // Duplicate of 623420, but without CallLogRecord
         759089, // VerifiedNameCertificate, LocalizedName, ..., BizIdentityInfo, BizAccountLinkInfo, ...
         614806, // HandshakeMessage, ..., ClientPayload, ..., AppVersion, UserAgent, WebdPayload ...
         968923, // Reaction, UserReceipt, ..., PhotoChange, ..., WebFeatures, ..., WebMessageInfoStatus, ...
-        698723, // NoiseCertificate, CertChain
+        623641, // NoiseCertificate, CertChain
         //867311, // ChatRowOpaqueData, ...
-        //726743, // SignalMessage, ...
-        //915286, // SessionStructure, ...
+        //2336, // SignalMessage, ...
+        //984661, // SessionStructure, ...
+        853721, // QP
     ]
     const unspecName = name => name.endsWith("Spec") ? name.slice(0, -4) : name
-    const unnestName = name => name.replace("Message$", "").replace("SyncActionValue$", "") // Don't nest messages into Message, that's too much nesting
+    const unnestName = name => name
+        .replace("Message$", "").replace("SyncActionValue$", "") // Don't nest messages into Message, that's too much nesting
+        .replace("ContextInfo$ForwardedNewsletterMessageInfo", "ForwardedNewsletterMessageInfo") // Hack to unnest name used outside ContextInfo
     const rename = name => unnestName(unspecName(name))
     // The constructor IDs that can be used for enum types
     const enumConstructorIDs = [76672, 654302]

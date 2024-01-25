@@ -59,6 +59,9 @@ type Client struct {
 	EnableAutoReconnect   bool
 	LastSuccessfulConnect time.Time
 	AutoReconnectErrors   int
+	// AutoReconnectHook is called when auto-reconnection fails. If the function returns false,
+	// the client will not attempt to reconnect. The number of retries can be read from AutoReconnectErrors.
+	AutoReconnectHook func(error) bool
 
 	sendActiveReceipts uint32
 
@@ -92,6 +95,9 @@ type Client struct {
 
 	messageRetries     map[string]int
 	messageRetriesLock sync.Mutex
+
+	incomingRetryRequestCounter     map[incomingRetryKey]int
+	incomingRetryRequestCounterLock sync.Mutex
 
 	appStateKeyRequests     map[string]time.Time
 	appStateKeyRequestsLock sync.RWMutex
@@ -185,6 +191,8 @@ func NewClient(deviceStore *store.Device, log waLog.Logger) *Client {
 		handlerQueue:    make(chan *waBinary.Node, handlerQueueSize),
 		appStateProc:    appstate.NewProcessor(deviceStore, log.Sub("AppState")),
 		socketWait:      make(chan struct{}),
+
+		incomingRetryRequestCounter: make(map[incomingRetryKey]int),
 
 		historySyncNotifications: make(chan *waProto.HistorySyncNotification, 32),
 
@@ -375,6 +383,10 @@ func (cli *Client) autoReconnect() {
 			return
 		} else if err != nil {
 			cli.Log.Errorf("Error reconnecting after autoreconnect sleep: %v", err)
+			if cli.AutoReconnectHook != nil && !cli.AutoReconnectHook(err) {
+				cli.Log.Debugf("AutoReconnectHook returned false, not reconnecting")
+				return
+			}
 		} else {
 			return
 		}
@@ -668,7 +680,7 @@ func (cli *Client) ParseWebMessage(chatJID types.JID, webMsg *waProto.WebMessage
 		if info.Sender.IsEmpty() {
 			return nil, ErrNotLoggedIn
 		}
-	} else if chatJID.Server == types.DefaultUserServer {
+	} else if chatJID.Server == types.DefaultUserServer || chatJID.Server == types.NewsletterServer {
 		info.Sender = chatJID
 	} else if webMsg.GetParticipant() != "" {
 		info.Sender, err = types.ParseJID(webMsg.GetParticipant())
