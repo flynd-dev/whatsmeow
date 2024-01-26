@@ -284,7 +284,7 @@ const (
 			SET key_data=?, timestamp=?, fingerprint=?
 			WHERE whatsmeow_app_state_sync_keys.timestamp < ?
 	`
-	getAppStateSyncKeyQuery = `SELECT key_data, timestamp, fingerprint FROM whatsmeow_app_state_sync_keys WHERE jid=? AND key_id=?`
+	getAppStateSyncKeyQuery         = `SELECT key_data, timestamp, fingerprint FROM whatsmeow_app_state_sync_keys WHERE jid=? AND key_id=?`
 	getLatestAppStateSyncKeyIDQuery = `SELECT key_id FROM whatsmeow_app_state_sync_keys WHERE jid=? ORDER BY timestamp DESC LIMIT 1`
 )
 
@@ -692,11 +692,11 @@ func (s *SQLStore) GetChatSettings(chat types.JID) (settings types.LocalChatSett
 const (
 	putMsgSecret = `
 		INSERT INTO whatsmeow_message_secrets (our_jid, chat_jid, sender_jid, message_id, key)
-		VALUES ($1, $2, $3, $4, $5)
+		VALUES (?, ?, ?, ?, ?)
 		ON CONFLICT (our_jid, chat_jid, sender_jid, message_id) DO NOTHING
 	`
 	getMsgSecret = `
-		SELECT key FROM whatsmeow_message_secrets WHERE our_jid=$1 AND chat_jid=$2 AND sender_jid=$3 AND message_id=$4
+		SELECT key FROM whatsmeow_message_secrets WHERE our_jid=? AND chat_jid=? AND sender_jid=? AND message_id=?
 	`
 )
 
@@ -731,10 +731,10 @@ func (s *SQLStore) GetMessageSecret(chat, sender types.JID, id types.MessageID) 
 const (
 	putPrivacyTokens = `
 		INSERT INTO whatsmeow_privacy_tokens (our_jid, their_jid, token, timestamp)
-		VALUES ($1, $2, $3, $4)
+		VALUES ($our_jid, $their_jid, $token, $timestamp)
 		ON CONFLICT (our_jid, their_jid) DO UPDATE SET token=EXCLUDED.token, timestamp=EXCLUDED.timestamp
 	`
-	getPrivacyToken = `SELECT token, timestamp FROM whatsmeow_privacy_tokens WHERE our_jid=$1 AND their_jid=$2`
+	getPrivacyToken = `SELECT token, timestamp FROM whatsmeow_privacy_tokens WHERE our_jid=$? AND their_jid=?`
 )
 
 func (s *SQLStore) PutPrivacyTokens(tokens ...store.PrivacyToken) error {
@@ -745,9 +745,9 @@ func (s *SQLStore) PutPrivacyTokens(tokens ...store.PrivacyToken) error {
 		args[i*3+1] = token.User.ToNonAD().String()
 		args[i*3+2] = token.Token
 		args[i*3+3] = token.Timestamp.Unix()
-		placeholders[i] = fmt.Sprintf("($1, $%d, $%d, $%d)", i*3+2, i*3+3, i*3+4)
+		placeholders[i] = fmt.Sprintf("(%d, %d, %d, %d)", args[0], args[i*3+2], args[i*3+3], args[i*3+4])
 	}
-	query := strings.ReplaceAll(putPrivacyTokens, "($1, $2, $3, $4)", strings.Join(placeholders, ","))
+	query := strings.ReplaceAll(putPrivacyTokens, "($our_jid, $their_jid, $token, $timestamp)", strings.Join(placeholders, ","))
 	_, err := s.db.Exec(query, args...)
 	return err
 }
